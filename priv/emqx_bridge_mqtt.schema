@@ -238,6 +238,6 @@
     C1 = maps:map(fun(Bn, Bc) ->
                       maps:to_list(maps:fold(Translate, #{}, maps:from_list(Bc)))
                   end, C),
-    io:format("P", [C1]),
+    io:format("C1: ~p~n", [C1]),
     maps:to_list(C1)
 end}.

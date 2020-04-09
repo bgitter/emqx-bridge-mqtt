@@ -21,7 +21,7 @@ case os:getenv("EMQX_DEPS_DEFAULT_VSN") of
        [begin
            io:format("AppConf: ~p~n", [AppConf]),
            AppConf0 = lists:keystore(vsn, 1, AppConf, {vsn, RemoveLeadingV(Tag)}),
-           io:format("AppConf0: ~p~n", []),AppConf0
+           io:format("AppConf0: ~p~n", []),
            {application, App, AppConf0}
         end || Conf = {application, App, AppConf} <- CONFIG]
 end.

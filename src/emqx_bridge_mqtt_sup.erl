@@ -23,15 +23,15 @@
 -logger_header("[Bridge]").
 
 %% APIs
--export([ start_link/0
-        , start_link/1
-        ]).
+-export([start_link/0
+  , start_link/1
+]).
 
--export([ create_bridge/2
-        , drop_bridge/1
-        , bridges/0
-        , is_bridge_exist/1
-        ]).
+-export([create_bridge/2
+  , drop_bridge/1
+  , bridges/0
+  , is_bridge_exist/1
+]).
 
 %% supervisor callbacks
 -export([init/1]).
@@ -39,46 +39,54 @@
 -define(SUP, ?MODULE).
 -define(WORKER_SUP, emqx_bridge_worker_sup).
 
-start_link() -> start_link(?SUP).
+start_link() ->
+  ?LOG(warning, "emqx_bridge_mqtt_sup start_link() Method start...~n"),
+  start_link(?SUP).
 
 start_link(Name) ->
-    supervisor:start_link({local, Name}, ?MODULE, Name).
+  ?LOG(warning, "emqx_bridge_mqtt_sup start_link(Name) Method start... Name: ~p~n", [Name]),
+  supervisor:start_link({local, Name}, ?MODULE, Name).
 
 init(?SUP) ->
-    BridgesConf = application:get_env(?APP, bridges, []),
-    BridgeSpec = lists:map(fun bridge_spec/1, BridgesConf),
-    SupFlag = #{strategy => one_for_one,
-                intensity => 100,
-                period => 10},
-    {ok, {SupFlag, BridgeSpec}}.
+  ?LOG(warning, "emqx_bridge_mqtt_sup init() Method start...~n"),
+  BridgesConf = application:get_env(?APP, bridges, []),
+  BridgeSpec = lists:map(fun bridge_spec/1, BridgesConf),
+  SupFlag = #{strategy => one_for_one,
+    intensity => 100,
+    period => 10},
+  {ok, {SupFlag, BridgeSpec}}.
 
 bridge_spec({Name, Config}) ->
-    #{id => Name,
-      start => {emqx_bridge_worker, start_link, [Name, Config]},
-      restart => permanent,
-      shutdown => 5000,
-      type => worker,
-      modules => [emqx_bridge_worker]}.
+  #{id => Name,
+    start => {emqx_bridge_worker, start_link, [Name, Config]},
+    restart => permanent,
+    shutdown => 5000,
+    type => worker,
+    modules => [emqx_bridge_worker]}.
 
 -spec(bridges() -> [{node(), map()}]).
 bridges() ->
-    [{Name, emqx_bridge_worker:status(Pid)} || {Name, Pid, _, _} <- supervisor:which_children(?SUP)].
+  ?LOG(warning, "emqx_bridge_mqtt_sup bridges...~n"),
+  [{Name, emqx_bridge_worker:status(Pid)} || {Name, Pid, _, _} <- supervisor:which_children(?SUP)].
 
 -spec(is_bridge_exist(atom() | pid()) -> boolean()).
 is_bridge_exist(Id) ->
-    case supervisor:get_childspec(?SUP, Id) of
-        {ok, _ChildSpec} -> true;
-        {error, _Error} -> false
-    end.
+  ?LOG(warning, "emqx_bridge_mqtt_sup is_bridge_exist(Id) Method exec... Id: ~p~n", [Id]),
+  case supervisor:get_childspec(?SUP, Id) of
+    {ok, _ChildSpec} -> true;
+    {error, _Error} -> false
+  end.
 
 create_bridge(Id, Config) ->
-    supervisor:start_child(?SUP, bridge_spec({Id, Config})).
+  ?LOG(warning, "emqx_bridge_mqtt_sup create_bridge(Id, Config) Method exec... Id: ~p, Config: ~p~n", [Id, Config]),
+  supervisor:start_child(?SUP, bridge_spec({Id, Config})).
 
 drop_bridge(Id) ->
-    case supervisor:terminate_child(?SUP, Id) of
-        ok ->
-            supervisor:delete_child(?SUP, Id);
-        {error, Error} ->
-            ?LOG(error, "Delete bridge failed, error : ~p", [Error]),
-            {error, Error}
-    end.
+  ?LOG(warning, "emqx_bridge_mqtt_sup drop_bridge(Id) Method exec... Id: ~p~n", [Id]),
+  case supervisor:terminate_child(?SUP, Id) of
+    ok ->
+      supervisor:delete_child(?SUP, Id);
+    {error, Error} ->
+      ?LOG(error, "Delete bridge failed, error : ~p", [Error]),
+      {error, Error}
+  end.

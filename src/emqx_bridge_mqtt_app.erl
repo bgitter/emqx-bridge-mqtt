@@ -20,14 +20,20 @@
 
 -behaviour(application).
 
+-include_lib("emqx/include/logger.hrl").
+
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-    emqx_ctl:register_command(bridges, {emqx_bridge_mqtt_cli, cli}, []),
-    emqx_bridge_worker:register_metrics(),
-    emqx_bridge_mqtt_sup:start_link().
+  ?LOG(warning, "emqx_bridge_mqtt_app start..."),
+  emqx_ctl:register_command(bridges, {emqx_bridge_mqtt_cli, cli}, []),
+  ?LOG(warning, "emqx_bridge_mqtt_app emqx_ctl=>register_command success..."),
+  emqx_bridge_worker:register_metrics(),
+  ?LOG(warning, "emqx_bridge_mqtt_app emqx_bridge_worker=>register_metrics success..."),
+  emqx_bridge_mqtt_sup:start_link().
 
 stop(_State) ->
-    emqx_ctl:unregister_command(bridges),
-    ok.
+  ?LOG(warning, "emqx_bridge_mqtt_app stop..."),
+  emqx_ctl:unregister_command(bridges),
+  ok.
 

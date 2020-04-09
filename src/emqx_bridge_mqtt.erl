@@ -21,17 +21,18 @@
 -behaviour(emqx_bridge_connect).
 
 %% behaviour callbacks
--export([ start/1
-        , send/2
-        , stop/1
-        ]).
+-export([start/1
+  , send/2
+  , stop/1
+]).
 
 %% optional behaviour callbacks
--export([ ensure_subscribed/3
-        , ensure_unsubscribed/2
-        ]).
+-export([ensure_subscribed/3
+  , ensure_unsubscribed/2
+]).
 
 -include_lib("emqx/include/emqx_mqtt.hrl").
+-include_lib("emqx/include/logger.hrl").
 
 -define(ACK_REF(ClientPid, PktId), {ClientPid, PktId}).
 
@@ -43,111 +44,122 @@
 %%--------------------------------------------------------------------
 
 start(Config = #{address := Address}) ->
-    Parent = self(),
-    Mountpoint = maps:get(receive_mountpoint, Config, undefined),
-    Handlers = make_hdlr(Parent, Mountpoint),
-    {Host, Port} = case string:tokens(Address, ":") of
-                       [H] -> {H, 1883};
-                       [H, P] -> {H, list_to_integer(P)}
-                   end,
-    ClientConfig = Config#{msg_handler => Handlers,
-                           host => Host,
-                           port => Port
-                          },
-    case emqtt:start_link(ClientConfig) of
-        {ok, Pid} ->
-            case emqtt:connect(Pid) of
-                {ok, _} ->
-                    try
-                        subscribe_remote_topics(Pid, maps:get(subscriptions, Config, [])),
-                        {ok, #{client_pid => Pid}}
-                    catch
-                        throw : Reason ->
-                            ok = stop(#{client_pid => Pid}),
-                            {error, Reason}
-                    end;
-                {error, Reason} ->
-                    ok = stop(#{client_pid => Pid}),
-                    {error, Reason}
-            end;
+  ?LOG(warning, "emqx_bridge_mqtt start... Config: ~p~n", [Config]),
+  Parent = self(),
+  Mountpoint = maps:get(receive_mountpoint, Config, undefined),
+  Handlers = make_hdlr(Parent, Mountpoint),
+  {Host, Port} = case string:tokens(Address, ":") of
+                   [H] -> {H, 1883};
+                   [H, P] -> {H, list_to_integer(P)}
+                 end,
+  ClientConfig = Config#{msg_handler => Handlers,
+    host => Host,
+    port => Port
+  },
+  case emqtt:start_link(ClientConfig) of
+    {ok, Pid} ->
+      ?LOG(warning, "emqtt start_link response ok! pid: ~p~n", [Pid]),
+      case emqtt:connect(Pid) of
+        {ok, _} ->
+          try
+            subscribe_remote_topics(Pid, maps:get(subscriptions, Config, [])),
+            ?LOG(warning, "emqtt subscribe ok!"),
+            {ok, #{client_pid => Pid}}
+          catch
+            throw : Reason ->
+              ?LOG(error, "emqtt subscribe fail! throw Reason: ~p~n", [Reason]),
+              ok = stop(#{client_pid => Pid}),
+              {error, Reason}
+          end;
         {error, Reason} ->
-            {error, Reason}
-    end.
+          ?LOG(warning, "emqtt connect fail! Reason: ~p~n", [Reason]),
+          ok = stop(#{client_pid => Pid}),
+          {error, Reason}
+      end;
+    {error, Reason} ->
+      ?LOG(warning, "emqtt start_link response fail! Reason: ~p~n", [Reason]),
+      {error, Reason}
+  end.
 
 stop(#{client_pid := Pid}) ->
-    safe_stop(Pid, fun() -> emqtt:stop(Pid) end, 1000),
-    ok.
+  safe_stop(Pid, fun() -> emqtt:stop(Pid) end, 1000),
+  ok.
 
 ensure_subscribed(#{client_pid := Pid}, Topic, QoS) when is_pid(Pid) ->
-    case emqtt:subscribe(Pid, Topic, QoS) of
-        {ok, _, _} -> ok;
-        Error -> Error
-    end;
+  case emqtt:subscribe(Pid, Topic, QoS) of
+    {ok, _, _} -> ok;
+    Error -> Error
+  end;
 ensure_subscribed(_Conn, _Topic, _QoS) ->
-    %% return ok for now, next re-connect should should call start with new topic added to config
-    ok.
+  %% return ok for now, next re-connect should should call start with new topic added to config
+  ok.
 
 ensure_unsubscribed(#{client_pid := Pid}, Topic) when is_pid(Pid) ->
-    case emqtt:unsubscribe(Pid, Topic) of
-        {ok, _, _} -> ok;
-        Error -> Error
-    end;
+  case emqtt:unsubscribe(Pid, Topic) of
+    {ok, _, _} -> ok;
+    Error -> Error
+  end;
 ensure_unsubscribed(_, _) ->
-    %% return ok for now, next re-connect should should call start with this topic deleted from config
-    ok.
+  %% return ok for now, next re-connect should should call start with this topic deleted from config
+  ok.
 
 safe_stop(Pid, StopF, Timeout) ->
-    MRef = monitor(process, Pid),
-    unlink(Pid),
-    try
-        StopF()
-    catch
-        _ : _ ->
-            ok
-    end,
-    receive
-        {'DOWN', MRef, _, _, _} ->
-            ok
-    after
-        Timeout ->
-            exit(Pid, kill)
-    end.
+  ?LOG(warning, "safe_stop! Pid: ~p, StopF: ~p, Timout: ~p~n", [Pid, StopF, Timeout]),
+  MRef = monitor(process, Pid),
+  unlink(Pid),
+  try
+    StopF()
+  catch
+    _ : _ ->
+      ok
+  end,
+  receive
+    {'DOWN', MRef, _, _, _} ->
+      ok
+  after
+    Timeout ->
+      exit(Pid, kill)
+  end.
 
 send(Conn, Msgs) ->
-    send(Conn, Msgs, undefined).
+  ?LOG(warning, "send(Conn, Msgs) Method exec... Conn: ~p, Msgs: ~p~n", [Conn, Msgs]),
+  send(Conn, Msgs, undefined).
 send(_Conn, [], PktId) ->
-    {ok, PktId};
+  ?LOG(warning, "send(_Conn, [], PktId) Method exec... PktId: ~p~n", [PktId]),
+  {ok, PktId};
 send(#{client_pid := ClientPid} = Conn, [Msg | Rest], _PktId) ->
-    case emqtt:publish(ClientPid, Msg) of
-        {ok, PktId} ->
-            send(Conn, Rest, PktId);
-        {error, Reason} ->
-            %% NOTE: There is no partial sucess of a batch and recover from the middle
-            %% only to retry all messages in one batch
-            {error, Reason}
-    end.
+  ?LOG(warning, "send(Conn, Msgs, _PktId) Method exec... Msgs: ~p~n", [[Msg | Rest]]),
+  case emqtt:publish(ClientPid, Msg) of
+    {ok, PktId} ->
+      send(Conn, Rest, PktId);
+    {error, Reason} ->
+      %% NOTE: There is no partial sucess of a batch and recover from the middle
+      %% only to retry all messages in one batch
+      {error, Reason}
+  end.
 
 handle_puback(Parent, #{packet_id := PktId, reason_code := RC}) ->
-    RC =:= ?RC_SUCCESS orelse error({puback_error_code, RC}),
-    Parent ! {batch_ack, PktId},
-    ok.
+  RC =:= ?RC_SUCCESS orelse error({puback_error_code, RC}),
+  Parent ! {batch_ack, PktId},
+  ok.
 
 handle_publish(Msg, Mountpoint) ->
-    emqx_broker:publish(emqx_bridge_msg:to_broker_msg(Msg, Mountpoint)).
+  ?LOG(warning, "handle_publish Method exec... Msg: ~p, Mountpoint: ~p~n", [Msg, Mountpoint]),
+  emqx_broker:publish(emqx_bridge_msg:to_broker_msg(Msg, Mountpoint)).
 
 handle_disconnected(Parent, Reason) ->
-    Parent ! {disconnected, self(), Reason}.
+  Parent ! {disconnected, self(), Reason}.
 
 make_hdlr(Parent, Mountpoint) ->
-    #{puback => fun(Ack) -> handle_puback(Parent, Ack) end,
-      publish => fun(Msg) -> handle_publish(Msg, Mountpoint) end,
-      disconnected => fun(Reason) -> handle_disconnected(Parent, Reason) end
-     }.
+  #{puback => fun(Ack) -> handle_puback(Parent, Ack) end,
+    publish => fun(Msg) -> handle_publish(Msg, Mountpoint) end,
+    disconnected => fun(Reason) -> handle_disconnected(Parent, Reason) end
+  }.
 
 subscribe_remote_topics(ClientPid, Subscriptions) ->
-    lists:foreach(fun({Topic, Qos}) ->
-                          case emqtt:subscribe(ClientPid, Topic, Qos) of
-                              {ok, _, _} -> ok;
-                              Error -> throw(Error)
-                          end
-                  end, Subscriptions).
+  lists:foreach(fun({Topic, Qos}) ->
+    case emqtt:subscribe(ClientPid, Topic, Qos) of
+      {ok, _, _} -> ok;
+      Error -> throw(Error)
+    end
+                end, Subscriptions).

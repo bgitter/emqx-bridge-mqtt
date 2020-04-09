@@ -3,6 +3,7 @@
 
 RemoveLeadingV =
     fun(Tag) ->
+        io:format("RemoveLeadingV: ~p~n", [Tag]),
         case re:run(Tag, "v\[0-9\]+\.\[0-9\]+\.*") of
             nomatch ->
                 Tag;
@@ -18,7 +19,9 @@ case os:getenv("EMQX_DEPS_DEFAULT_VSN") of
     []    -> CONFIG; % env var set to empty string
     Tag ->
        [begin
+           io:format("AppConf: ~p~n", [AppConf]),
            AppConf0 = lists:keystore(vsn, 1, AppConf, {vsn, RemoveLeadingV(Tag)}),
+           io:format("AppConf0: ~p~n", []),AppConf0
            {application, App, AppConf0}
         end || Conf = {application, App, AppConf} <- CONFIG]
 end.

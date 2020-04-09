@@ -127,6 +127,7 @@
 {translation, "emqx_bridge_mqtt.bridges", fun(Conf) ->
 
     MapPSKCiphers = fun(PSKCiphers) ->
+                        io:format("MapPSKCiphers input: ~p~n", [PSKCiphers]),
                         lists:map(
                           fun("PSK-AES128-CBC-SHA") -> {psk, aes_128_cbc, sha};
                              ("PSK-AES256-CBC-SHA") -> {psk, aes_256_cbc, sha};
@@ -237,5 +238,6 @@
     C1 = maps:map(fun(Bn, Bc) ->
                       maps:to_list(maps:fold(Translate, #{}, maps:from_list(Bc)))
                   end, C),
+    io:format("P", [C1]),
     maps:to_list(C1)
 end}.

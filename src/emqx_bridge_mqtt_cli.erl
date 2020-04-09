@@ -23,76 +23,76 @@
 -export([cli/1]).
 
 cli(["list"]) ->
-    foreach(fun({Name, State0}) ->
-                State = case State0 of
-                            connected -> <<"Running">>;
-                            _ -> <<"Stopped">>
-                        end,
-                emqx_ctl:print("name: ~s     status: ~s~n", [Name, State])
-            end, emqx_bridge_mqtt_sup:bridges());
+  foreach(fun({Name, State0}) ->
+    State = case State0 of
+              connected -> <<"Running">>;
+              _ -> <<"Stopped">>
+            end,
+    emqx_ctl:print("name: ~s     status: ~s~n", [Name, State])
+          end, emqx_bridge_mqtt_sup:bridges());
 
 cli(["start", Name]) ->
-    emqx_ctl:print("~s.~n", [try emqx_bridge_worker:ensure_started(Name) of
-                                 ok -> <<"Start bridge successfully">>;
-                                 connected -> <<"Bridge already started">>;
-                                 _ -> <<"Start bridge failed">>
-                             catch
-                                 _Error:_Reason ->
-                                     <<"Start bridge failed">>
-                             end]);
+  emqx_ctl:print("~s.~n", [try emqx_bridge_worker:ensure_started(Name) of
+                             ok -> <<"Start bridge successfully">>;
+                             connected -> <<"Bridge already started">>;
+                             _ -> <<"Start bridge failed">>
+                           catch
+                             _Error:_Reason ->
+                               <<"Start bridge failed">>
+                           end]);
 
 cli(["stop", Name]) ->
-    emqx_ctl:print("~s.~n", [try emqx_bridge_worker:ensure_stopped(Name) of
-                                 ok -> <<"Stop bridge successfully">>;
-                                 _ -> <<"Stop bridge failed">>
-                             catch
-                                 _Error:_Reason ->
-                                     <<"Stop bridge failed">>
-                             end]);
+  emqx_ctl:print("~s.~n", [try emqx_bridge_worker:ensure_stopped(Name) of
+                             ok -> <<"Stop bridge successfully">>;
+                             _ -> <<"Stop bridge failed">>
+                           catch
+                             _Error:_Reason ->
+                               <<"Stop bridge failed">>
+                           end]);
 
 cli(["forwards", Name]) ->
-    foreach(fun(Topic) ->
-                emqx_ctl:print("topic:   ~s~n", [Topic])
-            end, emqx_bridge_worker:get_forwards(Name));
+  foreach(fun(Topic) ->
+    emqx_ctl:print("topic:   ~s~n", [Topic])
+          end, emqx_bridge_worker:get_forwards(Name));
 
 cli(["add-forward", Name, Topic]) ->
-    case emqx_bridge_worker:ensure_forward_present(Name, iolist_to_binary(Topic)) of
-        ok -> emqx_ctl:print("Add-forward topic successfully.~n");
-        {error, Reason} -> emqx_ctl:print("Add-forward failed reason: ~p.~n", [Reason])
-    end;
+  case emqx_bridge_worker:ensure_forward_present(Name, iolist_to_binary(Topic)) of
+    ok -> emqx_ctl:print("Add-forward topic successfully.~n");
+    {error, Reason} -> emqx_ctl:print("Add-forward failed reason: ~p.~n", [Reason])
+  end;
 
 cli(["del-forward", Name, Topic]) ->
-    case emqx_bridge_worker:ensure_forward_absent(Name, iolist_to_binary(Topic)) of
-        ok -> emqx_ctl:print("Del-forward topic successfully.~n");
-        {error, Reason} -> emqx_ctl:print("Del-forward failed reason: ~p.~n", [Reason])
-    end;
+  case emqx_bridge_worker:ensure_forward_absent(Name, iolist_to_binary(Topic)) of
+    ok -> emqx_ctl:print("Del-forward topic successfully.~n");
+    {error, Reason} -> emqx_ctl:print("Del-forward failed reason: ~p.~n", [Reason])
+  end;
 
 cli(["subscriptions", Name]) ->
-    foreach(fun({Topic, Qos}) ->
-                emqx_ctl:print("topic: ~s, qos: ~p~n", [Topic, Qos])
-            end, emqx_bridge_worker:get_subscriptions(Name));
+  foreach(fun({Topic, Qos}) ->
+    emqx_ctl:print("topic: ~s, qos: ~p~n", [Topic, Qos])
+          end, emqx_bridge_worker:get_subscriptions(Name));
 
 cli(["add-subscription", Name, Topic, Qos]) ->
-    case emqx_bridge_worker:ensure_subscription_present(Name, Topic, list_to_integer(Qos)) of
-        ok -> emqx_ctl:print("Add-subscription topic successfully.~n");
-        {error, Reason} -> emqx_ctl:print("Add-subscription failed reason: ~p.~n", [Reason])
-    end;
+  case emqx_bridge_worker:ensure_subscription_present(Name, Topic, list_to_integer(Qos)) of
+    ok -> emqx_ctl:print("Add-subscription topic successfully.~n");
+    {error, Reason} -> emqx_ctl:print("Add-subscription failed reason: ~p.~n", [Reason])
+  end;
 
 cli(["del-subscription", Name, Topic]) ->
-    case emqx_bridge_worker:ensure_subscription_absent(Name, Topic) of
-        ok -> emqx_ctl:print("Del-subscription topic successfully.~n");
-        {error, Reason} -> emqx_ctl:print("Del-subscription failed reason: ~p.~n", [Reason])
-    end;
+  case emqx_bridge_worker:ensure_subscription_absent(Name, Topic) of
+    ok -> emqx_ctl:print("Del-subscription topic successfully.~n");
+    {error, Reason} -> emqx_ctl:print("Del-subscription failed reason: ~p.~n", [Reason])
+  end;
 
 cli(_) ->
-    emqx_ctl:usage([{"bridges list",           "List bridges"},
-                    {"bridges start <Name>",   "Start a bridge"},
-                    {"bridges stop <Name>",    "Stop a bridge"},
-                    {"bridges forwards <Name>", "Show a bridge forward topic"},
-                    {"bridges add-forward <Name> <Topic>", "Add bridge forward topic"},
-                    {"bridges del-forward <Name> <Topic>", "Delete bridge forward topic"},
-                    {"bridges subscriptions <Name>", "Show a bridge subscriptions topic"},
-                    {"bridges add-subscription <Name> <Topic> <Qos>", "Add bridge subscriptions topic"},
-                    {"bridges del-subscription <Name> <Topic>", "Delete bridge subscriptions topic"}]).
+  emqx_ctl:usage([{"bridges list", "List bridges"},
+    {"bridges start <Name>", "Start a bridge"},
+    {"bridges stop <Name>", "Stop a bridge"},
+    {"bridges forwards <Name>", "Show a bridge forward topic"},
+    {"bridges add-forward <Name> <Topic>", "Add bridge forward topic"},
+    {"bridges del-forward <Name> <Topic>", "Delete bridge forward topic"},
+    {"bridges subscriptions <Name>", "Show a bridge subscriptions topic"},
+    {"bridges add-subscription <Name> <Topic> <Qos>", "Add bridge subscriptions topic"},
+    {"bridges del-subscription <Name> <Topic>", "Delete bridge subscriptions topic"}]).
 
 

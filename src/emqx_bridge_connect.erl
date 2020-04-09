@@ -52,23 +52,24 @@
 -callback ensure_unsubscribed(connection(), topic()) -> ok.
 
 start(Module, Config) ->
-    case Module:start(Config) of
-        {ok, Conn} ->
-            {ok, Conn};
-        {error, Reason} ->
-            Config1 = obfuscate(Config),
-            ?LOG(error, "Failed to connect with module=~p\n"
-                 "config=~p\nreason:~p", [Module, Config1, Reason]),
-            {error, Reason}
-    end.
+  ?LOG(warning, "emqx_bridge_connect start... Module: ~p, Config: ~p~n", [Module, Config]),
+  case Module:start(Config) of
+    {ok, Conn} ->
+      {ok, Conn};
+    {error, Reason} ->
+      Config1 = obfuscate(Config),
+      ?LOG(error, "Failed to connect with module=~p\n"
+      "config=~p\nreason:~p", [Module, Config1, Reason]),
+      {error, Reason}
+  end.
 
 obfuscate(Map) ->
-    maps:fold(fun(K, V, Acc) ->
-                      case is_sensitive(K) of
-                          true -> [{K, '***'} | Acc];
-                          false -> [{K, V} | Acc]
-                      end
-              end, [], Map).
+  maps:fold(fun(K, V, Acc) ->
+    case is_sensitive(K) of
+      true -> [{K, '***'} | Acc];
+      false -> [{K, V} | Acc]
+    end
+            end, [], Map).
 
 is_sensitive(password) -> true;
 is_sensitive(_) -> false.

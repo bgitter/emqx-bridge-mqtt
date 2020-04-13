@@ -24,6 +24,8 @@
 
 -export([start/2, stop/1]).
 
+-logger_header("[Bridge]").
+
 start(_StartType, _StartArgs) ->
   ?LOG(warning, "emqx_bridge_mqtt_app start..."),
   emqx_ctl:register_command(bridges, {emqx_bridge_mqtt_cli, cli}, []),

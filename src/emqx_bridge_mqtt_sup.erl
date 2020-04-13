@@ -40,15 +40,15 @@
 -define(WORKER_SUP, emqx_bridge_worker_sup).
 
 start_link() ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup start_link() Method start...~n"),
+  ?LOG(warning, "emqx_bridge_mqtt_sup start_link() Method start..."),
   start_link(?SUP).
 
 start_link(Name) ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup start_link(Name) Method start... Name: ~p~n", [Name]),
+  ?LOG(warning, "emqx_bridge_mqtt_sup start_link(Name) Method start... Name: ~p", [Name]),
   supervisor:start_link({local, Name}, ?MODULE, Name).
 
 init(?SUP) ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup init() Method start...~n"),
+  ?LOG(warning, "emqx_bridge_mqtt_sup init() Method start..."),
   BridgesConf = application:get_env(?APP, bridges, []),
   BridgeSpec = lists:map(fun bridge_spec/1, BridgesConf),
   SupFlag = #{strategy => one_for_one,
@@ -66,23 +66,23 @@ bridge_spec({Name, Config}) ->
 
 -spec(bridges() -> [{node(), map()}]).
 bridges() ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup bridges...~n"),
+  ?LOG(warning, "emqx_bridge_mqtt_sup bridges..."),
   [{Name, emqx_bridge_worker:status(Pid)} || {Name, Pid, _, _} <- supervisor:which_children(?SUP)].
 
 -spec(is_bridge_exist(atom() | pid()) -> boolean()).
 is_bridge_exist(Id) ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup is_bridge_exist(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_mqtt_sup is_bridge_exist(Id) Method exec... Id: ~p", [Id]),
   case supervisor:get_childspec(?SUP, Id) of
     {ok, _ChildSpec} -> true;
     {error, _Error} -> false
   end.
 
 create_bridge(Id, Config) ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup create_bridge(Id, Config) Method exec... Id: ~p, Config: ~p~n", [Id, Config]),
+  ?LOG(warning, "emqx_bridge_mqtt_sup create_bridge(Id, Config) Method exec... Id: ~p, Config: ~p", [Id, Config]),
   supervisor:start_child(?SUP, bridge_spec({Id, Config})).
 
 drop_bridge(Id) ->
-  ?LOG(warning, "emqx_bridge_mqtt_sup drop_bridge(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_mqtt_sup drop_bridge(Id) Method exec... Id: ~p", [Id]),
   case supervisor:terminate_child(?SUP, Id) of
     ok ->
       supervisor:delete_child(?SUP, Id);

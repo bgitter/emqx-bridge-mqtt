@@ -144,31 +144,31 @@
 %% Find more connection specific configs in the callback modules
 %% of emqx_bridge_connect behaviour.
 start_link(Config) when is_list(Config) ->
-  ?LOG(warning, "emqx_bridge_worker start_link(Config[list]) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker start_link(Config[list]) Method exec... Config: ~p", [Config]),
   start_link(maps:from_list(Config));
 start_link(Config) ->
-  ?LOG(warning, "emqx_bridge_worker start_link(Config) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker start_link(Config) Method exec... Config: ~p", [Config]),
   gen_statem:start_link(?MODULE, Config, []).
 
 start_link(Name, Config) when is_list(Config) ->
-  ?LOG(warning, "emqx_bridge_worker start_link(Name, Config[list]) Method exec... Name: ~p, Config: ~p~n", [Name, Config]),
+  ?LOG(warning, "emqx_bridge_worker start_link(Name, Config[list]) Method exec... Name: ~p, Config: ~p", [Name, Config]),
   start_link(Name, maps:from_list(Config));
 start_link(Name, Config) ->
-  ?LOG(warning, "emqx_bridge_worker start_link(Name, Config) Method exec... Name: ~p, Config: ~p~n", [Name, Config]),
+  ?LOG(warning, "emqx_bridge_worker start_link(Name, Config) Method exec... Name: ~p, Config: ~p", [Name, Config]),
   Name1 = name(Name),
   gen_statem:start_link({local, Name1}, ?MODULE, Config#{name => Name1}, []).
 
 ensure_started(Name) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_started(Name) Method exec... Name: ~p~n", [Name]),
+  ?LOG(warning, "emqx_bridge_worker ensure_started(Name) Method exec... Name: ~p", [Name]),
   gen_statem:call(name(Name), ensure_started).
 
 %% @doc Manually stop bridge worker. State idempotency ensured.
 ensure_stopped(Id) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_stopped(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_worker ensure_stopped(Id) Method exec... Id: ~p", [Id]),
   ensure_stopped(Id, 1000).
 
 ensure_stopped(Id, Timeout) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_stopped(Id, Timeout) Method exec... Id: ~p, Timeout: ~p~n", [Id, Timeout]),
+  ?LOG(warning, "emqx_bridge_worker ensure_stopped(Id, Timeout) Method exec... Id: ~p, Timeout: ~p", [Id, Timeout]),
   Pid = case id(Id) of
           P when is_pid(P) -> P;
           N -> whereis(N)
@@ -190,38 +190,38 @@ ensure_stopped(Id, Timeout) ->
   end.
 
 stop(Pid) ->
-  ?LOG(warning, "emqx_bridge_worker stop(Pid) Method exec... Pid: ~p~n", [Pid]),
+  ?LOG(warning, "emqx_bridge_worker stop(Pid) Method exec... Pid: ~p", [Pid]),
   gen_statem:stop(Pid).
 
 status(Pid) when is_pid(Pid) ->
-  ?LOG(warning, "emqx_bridge_worker status(Pid) Method exec... Pid: ~p~n", [Pid]),
+  ?LOG(warning, "emqx_bridge_worker status(Pid) Method exec... Pid: ~p", [Pid]),
   gen_statem:call(Pid, status);
 status(Id) ->
-  ?LOG(warning, "emqx_bridge_worker status(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_worker status(Id) Method exec... Id: ~p", [Id]),
   gen_statem:call(name(Id), status).
 
 %% @doc Return all forwards (local subscriptions).
 -spec get_forwards(id()) -> [topic()].
 get_forwards(Id) ->
-  ?LOG(warning, "emqx_bridge_worker get_forwards(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_worker get_forwards(Id) Method exec... Id: ~p", [Id]),
   gen_statem:call(id(Id), get_forwards, timer:seconds(1000)).
 
 %% @doc Return all subscriptions (subscription over mqtt connection to remote broker).
 -spec get_subscriptions(id()) -> [{emqx_topic:topic(), qos()}].
 get_subscriptions(Id) ->
-  ?LOG(warning, "emqx_bridge_worker get_subscriptions(Id) Method exec... Id: ~p~n", [Id]),
+  ?LOG(warning, "emqx_bridge_worker get_subscriptions(Id) Method exec... Id: ~p", [Id]),
   gen_statem:call(id(Id), get_subscriptions).
 
 %% @doc Add a new forward (local topic subscription).
 -spec ensure_forward_present(id(), topic()) -> ok.
 ensure_forward_present(Id, Topic) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_forward_present(Id, Topic) Method exec... Id: ~p, Topic: ~p~n", [Id, Topic]),
+  ?LOG(warning, "emqx_bridge_worker ensure_forward_present(Id, Topic) Method exec... Id: ~p, Topic: ~p", [Id, Topic]),
   gen_statem:call(id(Id), {ensure_present, forwards, topic(Topic)}).
 
 %% @doc Ensure a forward topic is deleted.
 -spec ensure_forward_absent(id(), topic()) -> ok.
 ensure_forward_absent(Id, Topic) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_forward_absent(Id, Topic) Method exec... Id: ~p, Topic: ~p~n", [Id, Topic]),
+  ?LOG(warning, "emqx_bridge_worker ensure_forward_absent(Id, Topic) Method exec... Id: ~p, Topic: ~p", [Id, Topic]),
   gen_statem:call(id(Id), {ensure_absent, forwards, topic(Topic)}).
 
 %% @doc Ensure subscribed to remote topic.
@@ -229,14 +229,14 @@ ensure_forward_absent(Id, Topic) ->
 %%       return `{error, no_remote_subscription_support}' otherwise.
 -spec ensure_subscription_present(id(), topic(), qos()) -> ok | {error, any()}.
 ensure_subscription_present(Id, Topic, QoS) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_subscription_present(Id, Topic, QoS) Method exec... Id: ~p, Topic: ~p, QoS: ~p~n", [Id, Topic, QoS]),
+  ?LOG(warning, "emqx_bridge_worker ensure_subscription_present(Id, Topic, QoS) Method exec... Id: ~p, Topic: ~p, QoS: ~p", [Id, Topic, QoS]),
   gen_statem:call(id(Id), {ensure_present, subscriptions, {topic(Topic), QoS}}).
 
 %% @doc Ensure unsubscribed from remote topic.
 %% NOTE: only applicable when connection module is emqx_bridge_mqtt
 -spec ensure_subscription_absent(id(), topic()) -> ok.
 ensure_subscription_absent(Id, Topic) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_subscription_absent(Id, Topic) Method exec... Id: ~p, Topic: ~p~n", [Id, Topic]),
+  ?LOG(warning, "emqx_bridge_worker ensure_subscription_absent(Id, Topic) Method exec... Id: ~p, Topic: ~p", [Id, Topic]),
   gen_statem:call(id(Id), {ensure_absent, subscriptions, topic(Topic)}).
 
 callback_mode() ->
@@ -245,7 +245,7 @@ callback_mode() ->
 
 %% @doc Config should be a map().
 init(Config) ->
-  ?LOG(warning, "emqx_bridge_worker init(Config) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker init(Config) Method exec... Config: ~p", [Config]),
   erlang:process_flag(trap_exit, true),
   ConnectModule = maps:get(connect_module, Config),
   Subscriptions = maps:get(subscriptions, Config, []),
@@ -259,6 +259,7 @@ init(Config) ->
     emqx_bridge_connect:start(ConnectModule, ConnectConfig#{subscriptions => SubsX})
                end,
   self() ! idle,
+  io:format("emqx_bridge_worker init(Config) Method exec... prep return"),
   {ok, idle, State#{connect_module => ConnectModule,
     connect_fun => ConnectFun,
     forwards => Topics,
@@ -267,7 +268,7 @@ init(Config) ->
   }}.
 
 init_opts(Config) ->
-  ?LOG(warning, "emqx_bridge_worker init_opts(Config) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker init_opts(Config) Method exec... Config: ~p", [Config]),
   IfRecordMetrics = maps:get(if_record_metrics, Config, true),
   ReconnDelayMs = maps:get(reconnect_delay_ms, Config, ?DEFAULT_RECONNECT_DELAY_MS),
   StartType = maps:get(start_type, Config, manual),
@@ -290,7 +291,7 @@ init_opts(Config) ->
     name => Name}.
 
 open_replayq(Config) ->
-  ?LOG(warning, "emqx_bridge_worker open_replayq(Config) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker open_replayq(Config) Method exec... Config: ~p", [Config]),
   QCfg = maps:get(queue, Config, #{}),
   Dir = maps:get(replayq_dir, QCfg, undefined),
   SegBytes = maps:get(replayq_seg_bytes, QCfg, ?DEFAULT_SEG_BYTES),
@@ -303,7 +304,7 @@ open_replayq(Config) ->
     marshaller => fun msg_marshaller/1}).
 
 check_subscriptions(Subscriptions) ->
-  ?LOG(warning, "emqx_bridge_worker check_subscriptions(Subscriptions) Method exec... Subscriptions: ~p~n", [Subscriptions]),
+  ?LOG(warning, "emqx_bridge_worker check_subscriptions(Subscriptions) Method exec... Subscriptions: ~p", [Subscriptions]),
   lists:map(fun({Topic, QoS}) ->
     Topic1 = iolist_to_binary(Topic),
     true = emqx_topic:validate({filter, Topic1}),
@@ -311,7 +312,7 @@ check_subscriptions(Subscriptions) ->
             end, Subscriptions).
 
 get_conn_cfg(Config) ->
-  ?LOG(warning, "emqx_bridge_worker get_conn_cfg(Config) Method exec... Config: ~p~n", [Config]),
+  ?LOG(warning, "emqx_bridge_worker get_conn_cfg(Config) Method exec... Config: ~p", [Config]),
   maps:without([connect_module,
     queue,
     reconnect_delay_ms,
@@ -321,18 +322,18 @@ get_conn_cfg(Config) ->
   ], Config).
 
 code_change(_Vsn, State, Data, _Extra) ->
-  ?LOG(warning, "emqx_bridge_worker code_change(_Vsn, State, Data, _Extra) Method exec... State: ~p, Data: ~p, _Extra: ~p~n", [State, Data, _Extra]),
+  ?LOG(warning, "emqx_bridge_worker code_change(_Vsn, State, Data, _Extra) Method exec... State: ~p, Data: ~p, _Extra: ~p", [State, Data, _Extra]),
   {ok, State, Data}.
 
 terminate(_Reason, _StateName, #{replayq := Q} = State) ->
-  ?LOG(warning, "emqx_bridge_worker terminate(_R, _S, State) Method exec... State: ~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker terminate(_R, _S, State) Method exec... State: ~p", [State]),
   _ = disconnect(State),
   _ = replayq:close(Q),
   ok.
 
 %% ensure_started will be deprecated in the future
 idle({call, From}, ensure_started, State) ->
-  ?LOG(warning, "emqx_bridge_worker idle({call, From}, ensure_started, State) Method exec... From: ~p, State: ~p~n", [From, State]),
+  ?LOG(warning, "emqx_bridge_worker idle({call, From}, ensure_started, State) Method exec... From: ~p, State: ~p", [From, State]),
   case do_connect(State) of
     {ok, State1} ->
       {next_state, connected, State1, [{reply, From, ok}, {state_timeout, 0, connected}]};
@@ -341,18 +342,18 @@ idle({call, From}, ensure_started, State) ->
   end;
 %% @doc Standing by for manual start.
 idle(info, idle, #{start_type := manual}) ->
-  ?LOG(warning, "emqx_bridge_worker idle(info, idle, #{start_type := manual}) Method exec... ~n"),
+  ?LOG(warning, "emqx_bridge_worker idle(info, idle, #{start_type := manual}) Method exec... "),
   keep_state_and_data;
 %% @doc Standing by for auto start.
 idle(info, idle, #{start_type := auto} = State) ->
-  ?LOG(warning, "emqx_bridge_worker idle(info, idle, #{start_type := auto} = State) Method exec... State:~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker idle(info, idle, #{start_type := auto} = State) Method exec... State:~p", [State]),
   connecting(State);
 idle(state_timeout, reconnect, State) ->
-  ?LOG(warning, "emqx_bridge_worker idle(state_timeout, reconnect, State) Method exec... State:~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker idle(state_timeout, reconnect, State) Method exec... State:~p", [State]),
   connecting(State);
 
 idle(info, {batch_ack, Ref}, State) ->
-  ?LOG(warning, "emqx_bridge_worker idle(info, {batch_ack, Ref}, State) Method exec... State:~p, Ref: ~p~n", [State, Ref]),
+  ?LOG(warning, "emqx_bridge_worker idle(info, {batch_ack, Ref}, State) Method exec... State:~p, Ref: ~p", [State, Ref]),
   case do_ack(State, Ref) of
     {ok, NewState} ->
       {keep_state, NewState};
@@ -361,11 +362,11 @@ idle(info, {batch_ack, Ref}, State) ->
   end;
 
 idle(Type, Content, State) ->
-  ?LOG(warning, "emqx_bridge_worker idle(Type, Content, State) Method exec... Type: ~p, Content: ~p, State:~p~n", [Type, Content, State]),
+  ?LOG(warning, "emqx_bridge_worker idle(Type, Content, State) Method exec... Type: ~p, Content: ~p, State:~p", [Type, Content, State]),
   common(idle, Type, Content, State).
 
 connecting(#{reconnect_delay_ms := ReconnectDelayMs} = State) ->
-  ?LOG(warning, "emqx_bridge_worker connecting(#{reconnect_delay_ms := ReconnectDelayMs} = State) Method exec... ReconnectDelayMs: ~p, State:~p~n", [ReconnectDelayMs, State]),
+  ?LOG(warning, "emqx_bridge_worker connecting(#{reconnect_delay_ms := ReconnectDelayMs} = State) Method exec... ReconnectDelayMs: ~p, State:~p", [ReconnectDelayMs, State]),
   case do_connect(State) of
     {ok, State1} ->
       {next_state, connected, State1, {state_timeout, 0, connected}};
@@ -374,7 +375,7 @@ connecting(#{reconnect_delay_ms := ReconnectDelayMs} = State) ->
   end.
 
 connected(state_timeout, connected, #{inflight := Inflight} = State) ->
-  ?LOG(warning, "emqx_bridge_worker connected(state_timeout, connected, #{inflight := Inflight} = State) Method exec... Inflight: ~p, State:~p~n", [Inflight, State]),
+  ?LOG(warning, "emqx_bridge_worker connected(state_timeout, connected, #{inflight := Inflight} = State) Method exec... Inflight: ~p, State:~p", [Inflight, State]),
   case retry_inflight(State, Inflight) of
     {ok, NewState} ->
       {keep_state, NewState, {next_event, internal, maybe_send}};
@@ -382,22 +383,22 @@ connected(state_timeout, connected, #{inflight := Inflight} = State) ->
       {keep_state, NewState}
   end;
 connected(internal, maybe_send, State) ->
-  ?LOG(warning, "emqx_bridge_worker connected(internal, maybe_send, State) Method exec... State:~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker connected(internal, maybe_send, State) Method exec... State:~p", [State]),
   {_, NewState} = pop_and_send(State),
   {keep_state, NewState};
 
 connected(info, {disconnected, Conn, Reason},
     #{connection := Connection, name := Name, reconnect_delay_ms := ReconnectDelayMs} = State) ->
-  ?LOG(warning, "emqx_bridge_worker connected(_, {disconnected}, #{}) Method exec... Conn: ~p, Reason: ~p, Connection: ~p, Name: ~p, ReconnectDelayMs: ~p, State:~p~n", [Conn, Reason, Connection, Name, ReconnectDelayMs, State]),
+  ?LOG(warning, "emqx_bridge_worker connected(_, {disconnected}, #{}) Method exec... Conn: ~p, Reason: ~p, Connection: ~p, Name: ~p, ReconnectDelayMs: ~p, State:~p", [Conn, Reason, Connection, Name, ReconnectDelayMs, State]),
   case Conn =:= maps:get(client_pid, Connection, undefined) of
     true ->
-      ?LOG(info, "Bridge ~p diconnected~nreason=~p", [Name, Reason]),
+      ?LOG(info, "Bridge ~p diconnectedreason=~p", [Name, Reason]),
       {next_state, idle, State#{connection => undefined}, {state_timeout, ReconnectDelayMs, reconnect}};
     false ->
       keep_state_and_data
   end;
 connected(info, {batch_ack, Ref}, State) ->
-  ?LOG(warning, "emqx_bridge_worker connected(info, {batch_ack, Ref}, State) Method exec... Ref: ~p, State:~p~n", [Ref, State]),
+  ?LOG(warning, "emqx_bridge_worker connected(info, {batch_ack, Ref}, State) Method exec... Ref: ~p, State:~p", [Ref, State]),
   case do_ack(State, Ref) of
     {ok, NewState} ->
       {keep_state, NewState, {next_event, internal, maybe_send}};
@@ -405,40 +406,40 @@ connected(info, {batch_ack, Ref}, State) ->
       keep_state_and_data
   end;
 connected(Type, Content, State) ->
-  ?LOG(warning, "emqx_bridge_worker connected(Type, Content, State) Method exec... Type: ~p, Content: ~p, State:~p~n", [Type, Content, State]),
+  ?LOG(warning, "emqx_bridge_worker connected(Type, Content, State) Method exec... Type: ~p, Content: ~p, State:~p", [Type, Content, State]),
   common(connected, Type, Content, State).
 
 %% Common handlers
 common(StateName, {call, From}, status, _State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, status, _) Method exec... StateName: ~p, From:~p~n", [StateName, From]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, status, _) Method exec... StateName: ~p, From:~p", [StateName, From]),
   {keep_state_and_data, [{reply, From, StateName}]};
 common(_StateName, {call, From}, ensure_started, _State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_started, _) Method exec... _StateName: ~p, From:~p~n", [_StateName, From]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_started, _) Method exec... _StateName: ~p, From:~p", [_StateName, From]),
   {keep_state_and_data, [{reply, From, connected}]};
 common(_StateName, {call, From}, ensure_stopped, _State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_stopped, _) Method exec... _StateName: ~p, From:~p~n", [_StateName, From]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_stopped, _) Method exec... _StateName: ~p, From:~p", [_StateName, From]),
   {stop_and_reply, {shutdown, manual}, [{reply, From, ok}]};
 common(_StateName, {call, From}, get_forwards, #{forwards := Forwards}) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, get_forwards, _) Method exec... _StateName: ~p, From:~p, Forwards: ~p~n", [_StateName, From, Forwards]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, get_forwards, _) Method exec... _StateName: ~p, From:~p, Forwards: ~p", [_StateName, From, Forwards]),
   {keep_state_and_data, [{reply, From, Forwards}]};
 common(_StateName, {call, From}, get_subscriptions, #{subscriptions := Subs}) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, get_subscriptions, _) Method exec... _StateName: ~p, From:~p, Subs: ~p~n", [_StateName, From, Subs]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, get_subscriptions, _) Method exec... _StateName: ~p, From:~p, Subs: ~p", [_StateName, From, Subs]),
   {keep_state_and_data, [{reply, From, Subs}]};
 common(_StateName, {call, From}, {ensure_present, What, Topic}, State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_present, _) Method exec... _StateName: ~p, From:~p, What: ~p, Topic: ~p, State: ~p~n", [_StateName, From, What, Topic, State]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_present, _) Method exec... _StateName: ~p, From:~p, What: ~p, Topic: ~p, State: ~p", [_StateName, From, What, Topic, State]),
   {Result, NewState} = ensure_present(What, Topic, State),
   {keep_state, NewState, [{reply, From, Result}]};
 common(_StateName, {call, From}, {ensure_absent, What, Topic}, State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_absent, _) Method exec... _StateName: ~p, From:~p, What: ~p, Topic: ~p, State: ~p~n", [_StateName, From, What, Topic, State]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, ensure_absent, _) Method exec... _StateName: ~p, From:~p, What: ~p, Topic: ~p, State: ~p", [_StateName, From, What, Topic, State]),
   {Result, NewState} = ensure_absent(What, Topic, State),
   {keep_state, NewState, [{reply, From, Result}]};
 common(_StateName, info, {deliver, _, Msg}, #{replayq := Q, if_record_metrics := IfRecordMetric} = State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, {deliver, _, _}, _) Method exec... _StateName: ~p, Msg:~p, Q: ~p, State: ~p~n", [_StateName, Msg, Q, State]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, {deliver, _, _}, _) Method exec... _StateName: ~p, Msg:~p, Q: ~p, State: ~p", [_StateName, Msg, Q, State]),
   bridges_metrics_inc(IfRecordMetric, 'bridge.mqtt.message_received'),
   NewQ = replayq:append(Q, collect([Msg])),
   {keep_state, State#{replayq => NewQ}, {next_event, internal, maybe_send}};
 common(_StateName, info, {'EXIT', _, _}, State) ->
-  ?LOG(warning, "emqx_bridge_worker common(_, {}, {'EXIT', _, _}, _) Method exec... _StateName: ~p, State: ~p~n", [_StateName, State]),
+  ?LOG(warning, "emqx_bridge_worker common(_, {}, {'EXIT', _, _}, _) Method exec... _StateName: ~p, State: ~p", [_StateName, State]),
   {keep_state, State};
 common(StateName, Type, Content, #{name := Name} = State) ->
   ?LOG(notice, "Bridge ~p discarded ~p type event at state ~p:~p",
@@ -446,15 +447,15 @@ common(StateName, Type, Content, #{name := Name} = State) ->
   {keep_state, State}.
 
 eval_bridge_handler(State = #{bridge_handler := ?NO_BRIDGE_HANDLER}, _Msg) ->
-  ?LOG(warning, "emqx_bridge_worker eval_bridge_handler[1] Method exec... State: ~p, _Msg: ~p~n", [State, _Msg]),
+  ?LOG(warning, "emqx_bridge_worker eval_bridge_handler[1] Method exec... State: ~p, _Msg: ~p", [State, _Msg]),
   State;
 eval_bridge_handler(State = #{bridge_handler := Handler}, Msg) ->
-  ?LOG(warning, "emqx_bridge_worker eval_bridge_handler[2] Method exec... State: ~p, Msg: ~p~n", [State, Msg]),
+  ?LOG(warning, "emqx_bridge_worker eval_bridge_handler[2] Method exec... State: ~p, Msg: ~p", [State, Msg]),
   Handler(Msg),
   State.
 
 ensure_present(Key, Topic, State) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_present() Method exec... Key: ~p, Topic: ~p, State: ~p~n", [Key, Topic, State]),
+  ?LOG(warning, "emqx_bridge_worker ensure_present() Method exec... Key: ~p, Topic: ~p, State: ~p", [Key, Topic, State]),
   Topics = maps:get(Key, State),
   case is_topic_present(Topic, Topics) of
     true ->
@@ -465,7 +466,7 @@ ensure_present(Key, Topic, State) ->
   end.
 
 ensure_absent(Key, Topic, State) ->
-  ?LOG(warning, "emqx_bridge_worker ensure_absent() Method exec... Key: ~p, Topic: ~p, State: ~p~n", [Key, Topic, State]),
+  ?LOG(warning, "emqx_bridge_worker ensure_absent() Method exec... Key: ~p, Topic: ~p, State: ~p", [Key, Topic, State]),
   Topics = maps:get(Key, State),
   case is_topic_present(Topic, Topics) of
     true ->
@@ -488,7 +489,7 @@ do_connect(#{forwards := Forwards,
   subscriptions := Subs,
   connect_fun := ConnectFun,
   name := Name} = State) ->
-  ?LOG(error, "emqx_bridge_worker do_connect() Method exec... State: ~p~n", [State]),
+  ?LOG(error, "emqx_bridge_worker do_connect() Method exec... State: ~p", [State]),
   ok = subscribe_local_topics(Forwards, Name),
   case ConnectFun(Subs) of
     {ok, Conn} ->
@@ -536,10 +537,10 @@ retry_inflight(State, [#{q_ack_ref := QAckRef, batch := Batch} | Inflight]) ->
   end.
 
 pop_and_send(#{inflight := Inflight, max_inflight := Max} = State) when length(Inflight) >= Max ->
-  ?LOG(error, "emqx_bridge_worker pop_and_send[1] Method exec... State: ~p~n", [State]),
+  ?LOG(error, "emqx_bridge_worker pop_and_send[1] Method exec... State: ~p", [State]),
   {ok, State};
 pop_and_send(#{replayq := Q, connect_module := Module} = State) ->
-  ?LOG(error, "emqx_bridge_worker pop_and_send[2] Method exec... State: ~p~n", [State]),
+  ?LOG(error, "emqx_bridge_worker pop_and_send[2] Method exec... State: ~p", [State]),
   case replayq:is_empty(Q) of
     true ->
       {ok, State};
@@ -559,7 +560,7 @@ do_send(#{inflight := Inflight,
   connection := Connection,
   mountpoint := Mountpoint,
   if_record_metrics := IfRecordMetrics} = State, QAckRef, Batch) ->
-  ?LOG(error, "emqx_bridge_worker do_send() Method exec... State: ~p, QAckRef: ~p, Batch: ~p~n", [State, QAckRef, Batch]),
+  ?LOG(error, "emqx_bridge_worker do_send() Method exec... State: ~p, QAckRef: ~p, Batch: ~p", [State, QAckRef, Batch]),
   ExportMsg = fun(Message) ->
     bridges_metrics_inc(IfRecordMetrics, 'bridge.mqtt.message_sent'),
     emqx_bridge_msg:to_export(Module, Mountpoint, Message)
@@ -581,23 +582,23 @@ do_ack(#{inflight := []} = State, Ref) ->
 
 do_ack(#{inflight := [#{send_ack_ref := Ref,
   q_ack_ref := QAckRef} | Rest], replayq := Q} = State, Ref) ->
-  ?LOG(warning, "emqx_bridge_worker do_ack[2] Method exec... State: ~p, Ref: ~p~n", [State, Ref]),
+  ?LOG(warning, "emqx_bridge_worker do_ack[2] Method exec... State: ~p, Ref: ~p", [State, Ref]),
   ok = replayq:ack(Q, QAckRef),
   {ok, State#{inflight => Rest}};
 
 do_ack(#{inflight := [#{q_ack_ref := QAckRef,
   batch := Batch} | Rest], replayq := Q} = State, Ref) ->
-  ?LOG(warning, "emqx_bridge_worker do_ack[3] Method exec... State: ~p, Ref: ~p~n", [State, Ref]),
+  ?LOG(warning, "emqx_bridge_worker do_ack[3] Method exec... State: ~p, Ref: ~p", [State, Ref]),
   ok = replayq:ack(Q, QAckRef),
   NewQ = replayq:append(Q, Batch),
   do_ack(State#{replayq => NewQ, inflight => Rest}, Ref).
 
 subscribe_local_topics(Topics, Name) ->
-  ?LOG(warning, "emqx_bridge_worker subscribe_local_topic[1] Method exec... Topics: ~p, Name: ~p~n", [Topics, Name]),
+  ?LOG(warning, "emqx_bridge_worker subscribe_local_topics() Method exec... Topics: ~p, Name: ~p", [Topics, Name]),
   lists:foreach(fun(Topic) -> subscribe_local_topic(Topic, Name) end, Topics).
 
 subscribe_local_topic(Topic, Name) ->
-  ?LOG(warning, "emqx_bridge_worker subscribe_local_topic[2] Method exec... Topic: ~p, Name: ~p~n", [Topic, Name]),
+  ?LOG(warning, "emqx_bridge_worker subscribe_local_topic() Method exec... Topic: ~p, Name: ~p", [Topic, Name]),
   do_subscribe(Topic, Name).
 
 topic(T) -> iolist_to_binary(T).
@@ -612,13 +613,13 @@ validate(RawTopic) ->
   end.
 
 do_subscribe(RawTopic, Name) ->
-  ?LOG(warning, "emqx_bridge_worker do_unsubscribe[1] Method exec... RawTopic: ~p, Name: ~p~n", [RawTopic, Name]),
+  ?LOG(warning, "emqx_bridge_worker do_subscribe() Method exec... RawTopic: ~p, Name: ~p", [RawTopic, Name]),
   TopicFilter = validate(RawTopic),
   {Topic, SubOpts} = emqx_topic:parse(TopicFilter, #{qos => ?QOS_1}),
   emqx_broker:subscribe(Topic, Name, SubOpts).
 
 do_unsubscribe(RawTopic) ->
-  ?LOG(warning, "emqx_bridge_worker do_unsubscribe[2] Method exec... RawTopic: ~p~n", [RawTopic]),
+  ?LOG(warning, "emqx_bridge_worker do_unsubscribe[2] Method exec... RawTopic: ~p", [RawTopic]),
   TopicFilter = validate(RawTopic),
   {Topic, _SubOpts} = emqx_topic:parse(TopicFilter),
   emqx_broker:unsubscribe(Topic).
@@ -626,12 +627,12 @@ do_unsubscribe(RawTopic) ->
 disconnect(#{connection := Conn,
   connect_module := Module
 } = State) when Conn =/= undefined ->
-  ?LOG(warning, "emqx_bridge_worker disconnect[1] Method exec... State: ~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker disconnect[1] Method exec... State: ~p", [State]),
   Module:stop(Conn),
   State0 = State#{connection => undefined},
   eval_bridge_handler(State0, disconnected);
 disconnect(State) ->
-  ?LOG(warning, "emqx_bridge_worker disconnect[2] Method exec... State: ~p~n", [State]),
+  ?LOG(warning, "emqx_bridge_worker disconnect[2] Method exec... State: ~p", [State]),
   eval_bridge_handler(State, disconnected).
 
 %% Called only when replayq needs to dump it to disk.
@@ -639,31 +640,31 @@ msg_marshaller(Bin) when is_binary(Bin) -> emqx_bridge_msg:from_binary(Bin);
 msg_marshaller(Msg) -> emqx_bridge_msg:to_binary(Msg).
 
 format_mountpoint(undefined) ->
-  ?LOG(warning, "emqx_bridge_worker format_mountpoint(undefined) Method exec...~n"),
+  ?LOG(warning, "emqx_bridge_worker format_mountpoint(undefined) Method exec..."),
   undefined;
 format_mountpoint(Prefix) ->
-  ?LOG(warning, "emqx_bridge_worker format_mountpoint(Prefix) Method exec... Prefix: ~p~n", [Prefix]),
+  ?LOG(warning, "emqx_bridge_worker format_mountpoint(Prefix) Method exec... Prefix: ~p", [Prefix]),
   binary:replace(iolist_to_binary(Prefix), <<"${node}">>, atom_to_binary(node(), utf8)).
 
 name(Id) -> list_to_atom(lists:concat([?MODULE, "_", Id])).
 
 id(Pid) when is_pid(Pid) ->
-  ?LOG(warning, "emqx_bridge_worker id(Pid) Method exec... Pid: ~p~n", [Pid]),
+  ?LOG(warning, "emqx_bridge_worker id(Pid) Method exec... Pid: ~p", [Pid]),
   Pid;
 id(Name) ->
-  ?LOG(warning, "emqx_bridge_worker id(Name) Method exec... Name: ~p~n", [Name]),
+  ?LOG(warning, "emqx_bridge_worker id(Name) Method exec... Name: ~p", [Name]),
   name(Name).
 
 register_metrics() ->
-  ?LOG(warning, "emqx_bridge_worker register_metrics[1] Method exec...~n"),
+  ?LOG(warning, "emqx_bridge_worker register_metrics[1] Method exec..."),
   lists:foreach(fun emqx_metrics:new/1,
     ['bridge.mqtt.message_sent',
       'bridge.mqtt.message_received'
     ]).
 
 bridges_metrics_inc(true, Metric) ->
-  ?LOG(warning, "emqx_bridge_worker bridges_metrics_inc[1] Method exec... Metric: ~p~n", [Metric]),
+  ?LOG(warning, "emqx_bridge_worker bridges_metrics_inc[1] Method exec... Metric: ~p", [Metric]),
   emqx_metrics:inc(Metric);
 bridges_metrics_inc(_IsRecordMetric, _Metric) ->
-  ?LOG(warning, "emqx_bridge_worker bridges_metrics_inc[2] Method exec... Metric: ~p~n", [_Metric]),
+  ?LOG(warning, "emqx_bridge_worker bridges_metrics_inc[2] Method exec... Metric: ~p", [_Metric]),
   ok.
